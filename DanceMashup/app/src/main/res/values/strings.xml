@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dance Mashup</string>
+    <string name="title">Dance Mashup 🕺💃</string>
+    <string name="subtitle">Drop in funny dance videos and a song. We chop them up on the beat and put your track underneath.</string>
+    <string name="step_videos">1. Dance videos</string>
+    <string name="add_videos">Add videos</string>
+    <string name="clear">Clear</string>
+    <string name="no_videos">No videos yet — add some, or share them to this app from your gallery.</string>
+    <plurals name="videos_added">
+        <item quantity="one">%d video ready</item>
+        <item quantity="other">%d videos ready</item>
+    </plurals>
+    <string name="step_song">2. Song</string>
+    <string name="pick_song">Pick MP3</string>
+    <string name="no_song">No song picked</string>
+    <string name="step_options">3. Options</string>
+    <string name="length">Length</string>
+    <string name="len_song">Whole song</string>
+    <string name="len_15">15s</string>
+    <string name="len_30">30s</string>
+    <string name="len_60">60s</string>
+    <string name="chaos">Craziness (shorter cuts, stutters, flips, zooms)</string>
+    <string name="bpm">Song tempo (BPM) — cuts land on the beat</string>
+    <string name="make">Make it funny!</string>
+    <string name="remix">Remix 🔀</string>
+    <string name="share">Share</string>
+    <string name="save">Save to gallery</string>
+    <string name="status_reading">Reading files…</string>
+    <string name="status_skipped">Skipped %d file(s) that were too short or unreadable.</string>
+    <string name="status_rendering">Mashing it up…</string>
+    <string name="status_rendering_pct">Mashing it up… %d%%</string>
+    <string name="status_done">Done! %d cuts. Hit Remix for a different version.</string>
+    <string name="status_failed">Something went wrong: %s</string>
+    <string name="saved_to">Saved to %s</string>
+    <string name="save_failed">Could not save: %s</string>
+</resources>

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title"
+            android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/subtitle" />
+
+        <!-- 1. Videos -->
+        <TextView
+            style="@style/Section"
+            android:text="@string/step_videos" />
+
+        <TextView
+            android:id="@+id/clipsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/addVideosButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/add_videos" />
+
+            <Button
+                android:id="@+id/clearVideosButton"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/clear" />
+        </LinearLayout>
+
+        <!-- 2. Song -->
+        <TextView
+            style="@style/Section"
+            android:text="@string/step_song" />
+
+        <TextView
+            android:id="@+id/songText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="middle"
+            android:singleLine="true" />
+
+        <Button
+            android:id="@+id/pickSongButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/pick_song" />
+
+        <!-- 3. Options -->
+        <TextView
+            style="@style/Section"
+            android:text="@string/step_options" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/length" />
+
+        <RadioGroup
+            android:id="@+id/lengthGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checkedButton="@id/len30"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/lenSong"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/len_song" />
+
+            <RadioButton
+                android:id="@+id/len15"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/len_15" />
+
+            <RadioButton
+                android:id="@+id/len30"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/len_30" />
+
+            <RadioButton
+                android:id="@+id/len60"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/len_60" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/chaos" />
+
+        <SeekBar
+            android:id="@+id/chaosBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="60" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/bpm" />
+
+        <EditText
+            android:id="@+id/bpmInput"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3"
+            android:text="120" />
+
+        <Button
+            android:id="@+id/makeButton"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/make"
+            android:textSize="18sp" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:max="100"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <!-- Result -->
+        <LinearLayout
+            android:id="@+id/resultPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/playerView"
+                android:layout_width="match_parent"
+                android:layout_height="480dp"
+                android:background="#000000"
+                app:resize_mode="fit" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/remixButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/remix" />
+
+                <Button
+                    android:id="@+id/saveButton"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/save" />
+
+                <Button
+                    android:id="@+id/shareButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/share" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
