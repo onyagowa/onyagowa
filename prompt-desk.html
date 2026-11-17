@@ -1,0 +1,426 @@
+<title>Prompt Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: two-pane workbench. Left = thoughts + settings, right = paste-ready prompt. Profile is its own tab. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --surface2:#eef0f4; --line:#dde1e8;
+  --fg:#12161d; --muted:#5d6675; --accent:#2b4eff; --accent-fg:#ffffff; --accent-soft:#e4e9ff;
+  --good:#17803d; --warn:#a15c00; --code-bg:#0f1420; --code-fg:#e6eaf3; --code-dim:#8b95a8;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c0f15; --surface:#141922; --surface2:#1b212c; --line:#283040;
+  --fg:#e8ecf4; --muted:#97a1b3; --accent:#6f8bff; --accent-fg:#0b0f1c; --accent-soft:#1d2744;
+  --good:#4cc37a; --warn:#e0a24a; --code-bg:#080b11; --code-fg:#e6eaf3; --code-dim:#7d889c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c0f15; --surface:#141922; --surface2:#1b212c; --line:#283040;
+  --fg:#e8ecf4; --muted:#97a1b3; --accent:#6f8bff; --accent-fg:#0b0f1c; --accent-soft:#1d2744;
+  --good:#4cc37a; --warn:#e0a24a; --code-bg:#080b11; --code-fg:#e6eaf3; --code-dim:#7d889c; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-body);
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand h1{font:600 22px/1.2 var(--font-display);margin:0;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px}
+.tab{border:0;background:transparent;color:var(--muted);font:500 14px var(--font-body);padding:7px 14px;border-radius:7px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.meter{font-size:11px;color:var(--muted);margin-left:6px}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+label,.lbl{font:600 11px var(--font-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.hint{font-size:12px;color:var(--muted);margin:0}
+textarea,input[type=text],select{width:100%;font:15px/1.5 var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{resize:vertical;min-height:84px}
+#thoughts{min-height:190px;font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--fg);font:500 13px var(--font-body);padding:6px 11px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.checks{display:flex;flex-direction:column;gap:8px}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--accent)}
+
+.out-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.badge{font:500 11px var(--font-mono);padding:3px 8px;border-radius:6px;background:var(--surface2);color:var(--muted)}
+.badge.ai{background:var(--accent-soft);color:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 14px var(--font-body);padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.ok{background:var(--good);border-color:var(--good);color:#fff}
+.out{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:16px;font:13px/1.65 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;min-height:300px;max-height:640px;overflow:auto;margin:0}
+.tag{color:#7fa2ff}
+.status{font-size:12px;color:var(--muted);min-height:18px}
+.status.err{color:var(--warn)}
+.sub{margin:0;font:600 15px var(--font-display)}
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Prompt Desk</h1>
+      <p>Dump your thinking. Get a prompt that is ready to paste.</p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-compose" aria-selected="true">Compose</button>
+      <button class="tab" role="tab" id="tab-profile" aria-selected="false">My profile<span class="meter" id="meter"></span></button>
+    </div>
+  </header>
+
+  <section id="view-compose" class="grid">
+    <div class="panel">
+      <div class="field">
+        <label for="thoughts">Your thoughts</label>
+        <textarea id="thoughts" placeholder="Write it the way it sits in your head. Half sentences are fine."></textarea>
+        <p class="hint" id="exampleHint">Example text is loaded so you can see the output. Replace it with your own.</p>
+      </div>
+      <div class="field">
+        <span class="lbl">What kind of task</span>
+        <div class="chips" id="taskChips"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="format">Output shape</label>
+          <select id="format"></select>
+        </div>
+        <div class="field">
+          <label for="depth">Depth</label>
+          <select id="depth">
+            <option value="brief">Brief</option>
+            <option value="standard" selected>Standard</option>
+            <option value="thorough">Thorough</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="target">Paste into</label>
+          <select id="target">
+            <option value="claude" selected>Claude</option>
+            <option value="other">ChatGPT, Gemini, other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Behaviour</span>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="optAsk"> <span>Ask up to 3 questions first if something blocks a good answer</span></label>
+          <label class="check"><input type="checkbox" id="optRec" checked> <span>Lead with a recommendation, then the reasoning</span></label>
+          <label class="check"><input type="checkbox" id="optCheck" checked> <span>Check the answer against my goal before replying</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="out-head">
+        <span class="sub">Your prompt</span>
+        <span class="badge" id="badge">instant build</span>
+      </div>
+      <pre class="out" id="out" tabindex="0"></pre>
+      <div class="actions">
+        <button class="btn primary" id="copy">Copy prompt</button>
+        <button class="btn" id="sharpen" hidden>Sharpen with Claude</button>
+        <button class="btn" id="stop" hidden>Stop</button>
+        <button class="btn" id="reset" hidden>Back to instant build</button>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+      <p class="hint">Instant build is assembled on this page from your profile and thoughts. Sharpen asks Claude to rewrite it into a tighter prompt first.</p>
+    </div>
+  </section>
+
+  <section id="view-profile" class="panel" hidden>
+    <div>
+      <p class="sub">Who you are, once</p>
+      <p class="hint">Every prompt starts from this. Empty fields are left out. It is stored in this browser only, so use Copy profile as a backup.</p>
+    </div>
+    <div class="profile-grid" id="profileGrid"></div>
+    <div class="tools">
+      <button class="btn" id="copyProfile">Copy profile</button>
+      <button class="btn" id="pasteProfile">Restore from pasted profile</button>
+      <button class="btn" id="clearProfile">Clear profile</button>
+      <span class="status" id="pstatus" aria-live="polite"></span>
+    </div>
+    <div class="field" id="restoreBox" hidden>
+      <label for="restoreText">Paste a copied profile here</label>
+      <textarea id="restoreText" placeholder="Paste JSON from Copy profile"></textarea>
+      <div class="actions"><button class="btn primary" id="applyRestore">Restore</button></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var PROFILE_FIELDS=[
+    {k:'name',l:'Name',t:'text',p:'How the AI should address you'},
+    {k:'role',l:'What you do',t:'area',p:'Role, business, industry, seniority'},
+    {k:'focus',l:'Current focus',t:'area',p:'Projects, clients or priorities you are working on now'},
+    {k:'goals',l:'What you optimise for',t:'area',p:'Time saved, revenue, quality, learning, clarity'},
+    {k:'audience',l:'Who you write or decide for',t:'area',p:'Clients, team, investors, students, yourself'},
+    {k:'voice',l:'Your voice',t:'area',p:'Direct and warm, formal, plain words, short sentences'},
+    {k:'prefs',l:'How you like answers',t:'area',p:'Answer first, bullets over paragraphs, no filler, examples included'},
+    {k:'never',l:'Never do',t:'area',p:'Hedge, flatter, invent facts, use jargon, repeat my question'}
+  ];
+  var TASKS=[
+    {id:'write',l:'Write',role:'senior writer and editor',goal:'Produce a finished draft I can use with light edits.'},
+    {id:'plan',l:'Plan',role:'chief of staff',goal:'Turn this into a concrete plan with owners, order and deadlines.'},
+    {id:'decide',l:'Decide',role:'decision advisor',goal:'Help me choose, with a clear recommendation and what would change it.'},
+    {id:'research',l:'Research',role:'research analyst',goal:'Find, compare and synthesise what matters, and flag what is uncertain.'},
+    {id:'analyze',l:'Analyse',role:'analyst',goal:'Analyse what I give you and tell me what it means and what to do next.'},
+    {id:'code',l:'Build',role:'senior engineer',goal:'Produce working, minimal, well-explained code or technical steps.'},
+    {id:'summarize',l:'Summarise',role:'executive summariser',goal:'Condense this to what I need to act on.'},
+    {id:'brainstorm',l:'Ideate',role:'creative strategist',goal:'Generate strong, varied options, then rank them.'}
+  ];
+  var FORMATS=[
+    ['best','Best fit for the task'],['plain','Short plain-text answer'],['bullets','Bullet points'],
+    ['steps','Numbered steps'],['table','Table'],['email','Ready-to-send message'],
+    ['doc','Structured document with headings'],['code','Code with brief notes']
+  ];
+  var FORMAT_TEXT={
+    best:'Choose the format that fits the task best and use it consistently.',
+    plain:'Plain text, no headings, no bullet lists unless unavoidable.',
+    bullets:'Bullet points, each one a complete and useful thought.',
+    steps:'Numbered steps in the order I would do them.',
+    table:'A table, followed by two or three sentences on what stands out.',
+    email:'A message I can send as is, with a subject line if relevant.',
+    doc:'A structured document with clear headings I can scan.',
+    code:'Code first, then brief notes on how to run it and what to watch for.'
+  };
+  var DEPTH_TEXT={
+    brief:'Keep it short. Only what I need to act.',
+    standard:'Be complete without padding.',
+    thorough:'Go deep. Cover edge cases, trade-offs and what I may have missed.'
+  };
+  var EXAMPLE='need to reply to the client who keeps pushing the deadline. project is 2 weeks behind because their team was slow with approvals. want to keep the relationship but stop the free extras. maybe offer a smaller scope for the original date?';
+
+  var $=function(id){return document.getElementById(id)};
+  var store={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+  var profile={}; try{profile=JSON.parse(store.get('pd.profile')||'{}')||{}}catch(e){profile={}}
+  var state={task:'write',format:'best',depth:'standard',target:'claude',ask:false,rec:true,check:true,ai:null,aiBusy:false};
+  var savedState=null; try{savedState=JSON.parse(store.get('pd.state')||'null')}catch(e){}
+  if(savedState){['task','format','depth','target','ask','rec','check'].forEach(function(k){if(savedState[k]!==undefined)state[k]=savedState[k]})}
+  var savedThoughts=store.get('pd.thoughts');
+
+  /* profile form */
+  var pg=$('profileGrid');
+  PROFILE_FIELDS.forEach(function(f){
+    var d=document.createElement('div');d.className='field';
+    var lab=document.createElement('label');lab.htmlFor='p_'+f.k;lab.textContent=f.l;
+    var el=document.createElement(f.t==='area'?'textarea':'input');
+    el.id='p_'+f.k;el.placeholder=f.p;if(f.t==='text')el.type='text';
+    el.value=profile[f.k]||'';
+    el.addEventListener('input',function(){profile[f.k]=el.value;store.set('pd.profile',JSON.stringify(profile));afterChange()});
+    d.appendChild(lab);d.appendChild(el);pg.appendChild(d);
+  });
+  function fillProfileForm(){PROFILE_FIELDS.forEach(function(f){$('p_'+f.k).value=profile[f.k]||''})}
+
+  /* compose controls */
+  var chips=$('taskChips');
+  TASKS.forEach(function(t){
+    var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=t.l;b.dataset.id=t.id;
+    b.addEventListener('click',function(){state.task=t.id;afterChange()});
+    chips.appendChild(b);
+  });
+  var fsel=$('format');
+  FORMATS.forEach(function(f){var o=document.createElement('option');o.value=f[0];o.textContent=f[1];fsel.appendChild(o)});
+  $('thoughts').value=savedThoughts!==null?savedThoughts:EXAMPLE;
+  var isExample=savedThoughts===null;
+  $('exampleHint').hidden=!isExample;
+  fsel.value=state.format;$('depth').value=state.depth;$('target').value=state.target;
+  $('optAsk').checked=state.ask;$('optRec').checked=state.rec;$('optCheck').checked=state.check;
+
+  $('thoughts').addEventListener('input',function(){isExample=false;$('exampleHint').hidden=true;store.set('pd.thoughts',$('thoughts').value);afterChange()});
+  fsel.addEventListener('change',function(){state.format=fsel.value;afterChange()});
+  $('depth').addEventListener('change',function(){state.depth=$('depth').value;afterChange()});
+  $('target').addEventListener('change',function(){state.target=$('target').value;afterChange()});
+  $('optAsk').addEventListener('change',function(){state.ask=$('optAsk').checked;afterChange()});
+  $('optRec').addEventListener('change',function(){state.rec=$('optRec').checked;afterChange()});
+  $('optCheck').addEventListener('change',function(){state.check=$('optCheck').checked;afterChange()});
+
+  /* tabs */
+  function showTab(name){
+    var c=name==='compose';
+    $('view-compose').hidden=!c;$('view-profile').hidden=c;
+    $('tab-compose').setAttribute('aria-selected',c);$('tab-profile').setAttribute('aria-selected',!c);
+  }
+  $('tab-compose').addEventListener('click',function(){showTab('compose')});
+  $('tab-profile').addEventListener('click',function(){showTab('profile')});
+
+  function taskObj(){return TASKS.filter(function(t){return t.id===state.task})[0]}
+  function clean(s){return (s||'').trim()}
+
+  function aboutLines(){
+    var L=[];
+    var p=profile;
+    if(clean(p.name))L.push('Name: '+clean(p.name));
+    if(clean(p.role))L.push('What I do: '+clean(p.role));
+    if(clean(p.focus))L.push('Current focus: '+clean(p.focus));
+    if(clean(p.goals))L.push('I optimise for: '+clean(p.goals));
+    if(clean(p.audience))L.push('I write and decide for: '+clean(p.audience));
+    if(clean(p.voice))L.push('My voice: '+clean(p.voice));
+    return L;
+  }
+  function ruleLines(){
+    var R=[];
+    if(clean(profile.prefs))R.push('How I like answers: '+clean(profile.prefs));
+    if(clean(profile.never))R.push('Never: '+clean(profile.never));
+    R.push(state.ask?'If something blocks a good answer, ask at most 3 short questions first. Otherwise do not ask, proceed.':'Do not ask questions. Make reasonable assumptions and list them in one line at the top.');
+    if(state.rec)R.push('Open with your recommendation or the answer, then the reasoning.');
+    if(state.check)R.push('Before replying, check the answer against my goal and fix anything that misses it. Do not show this check.');
+    R.push('Do not invent facts, names or numbers. Mark anything uncertain.');
+    return R;
+  }
+
+  function buildPrompt(){
+    var t=taskObj(), th=clean($('thoughts').value)||'(no thoughts entered yet)';
+    var about=aboutLines(), rules=ruleLines();
+    var who=clean(profile.name)||'me';
+    var role='You are my '+t.role+(about.length?', working for '+who+'.':'.');
+    var out=[];
+    if(state.target==='claude'){
+      out.push('<role>\n'+role+'\n</role>');
+      if(about.length)out.push('<about_me>\n'+about.join('\n')+'\n</about_me>');
+      out.push('<task>\n'+t.goal+'\nBelow are my raw, unedited notes. Work out the real goal behind them and do the task.\n</task>');
+      out.push('<my_notes>\n'+th+'\n</my_notes>');
+      out.push('<output>\nFormat: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]+'\n</output>');
+      out.push('<rules>\n'+rules.map(function(r){return '- '+r}).join('\n')+'\n</rules>');
+    }else{
+      out.push('# Role\n'+role);
+      if(about.length)out.push('# About me\n'+about.join('\n'));
+      out.push('# Task\n'+t.goal+'\nBelow are my raw, unedited notes. Work out the real goal behind them and do the task.');
+      out.push('# My notes\n'+th);
+      out.push('# Output\nFormat: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]);
+      out.push('# Rules\n'+rules.map(function(r){return '- '+r}).join('\n'));
+    }
+    return out.join('\n\n');
+  }
+
+  function meta(){
+    var t=taskObj();
+    return 'Task type: '+t.l+' (act as: '+t.role+')\nGoal of this task type: '+t.goal+
+      '\nOutput format wanted: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]+
+      '\nProfile:\n'+(aboutLines().concat(ruleLines()).join('\n')||'(empty)');
+  }
+
+  /* render */
+  function render(){
+    document.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',c.dataset.id===state.task)});
+    var text=state.ai!==null?state.ai:buildPrompt();
+    var out=$('out');
+    out.textContent=text;
+    if(state.ai===null){
+      /* colour the XML tags for scanning; text stays plain for copying */
+      out.innerHTML=escapeHtml(text).replace(/(&lt;\/?[a-z_]+&gt;)/g,'<span class="tag">$1</span>');
+    }
+    var b=$('badge');
+    b.textContent=state.ai!==null?(state.aiBusy?'Claude is writing':'sharpened by Claude'):'instant build';
+    b.className='badge'+(state.ai!==null?' ai':'');
+    $('reset').hidden=state.ai===null||state.aiBusy;
+    $('stop').hidden=!state.aiBusy;
+    $('sharpen').disabled=state.aiBusy;
+    var filled=PROFILE_FIELDS.filter(function(f){return clean(profile[f.k])}).length;
+    $('meter').textContent=filled+'/'+PROFILE_FIELDS.length;
+  }
+  function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function plainText(){return $('out').textContent}
+
+  var controller=null;
+  function afterChange(){
+    if(controller){controller.abort();controller=null}
+    state.ai=null;state.aiBusy=false;setStatus('');
+    store.set('pd.state',JSON.stringify({task:state.task,format:state.format,depth:state.depth,target:state.target,ask:state.ask,rec:state.rec,check:state.check}));
+    render();
+  }
+
+  function setStatus(msg,err){var s=$('status');s.textContent=msg;s.className='status'+(err?' err':'')}
+
+  /* copy */
+  function fallbackCopy(){
+    var r=document.createRange();r.selectNodeContents($('out'));var sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);
+    setStatus('Selected. Press Ctrl+C or Cmd+C to copy.');
+  }
+  $('copy').addEventListener('click',function(){
+    var btn=$('copy'),txt=plainText();
+    function done(){btn.textContent='Copied';btn.classList.add('ok');setTimeout(function(){btn.textContent='Copy prompt';btn.classList.remove('ok')},1600)}
+    try{navigator.clipboard.writeText(txt).then(done,fallbackCopy)}catch(e){fallbackCopy()}
+  });
+
+  /* sharpen with Claude */
+  var sampleFn=null;
+  (async function(){
+    try{
+      if(window.claude&&window.claude.use){
+        var s=await window.claude.use('sample');
+        if(s){sampleFn=s;$('sharpen').hidden=false}
+      }
+    }catch(e){}
+  })();
+
+  $('sharpen').addEventListener('click',async function(){
+    if(!sampleFn||state.aiBusy)return;
+    var th=clean($('thoughts').value);
+    if(!th){setStatus('Add your thoughts first.',true);return}
+    controller=new AbortController();
+    state.aiBusy=true;state.ai='';render();setStatus('');
+    var tgt=state.target==='claude'
+      ?'The prompt will be pasted into Claude. Structure it with XML tags such as <role>, <about_me>, <task>, <context>, <output>, <rules>.'
+      :'The prompt will be pasted into a general AI chat tool. Structure it with plain markdown headings.';
+    var instr='You write prompts for an AI assistant. Turn the person\'s raw notes into one prompt that, when pasted, gets the task done in one go.\n\n'+
+      'Rules for the prompt you write:\n- Keep every fact from the notes. Never invent details.\n- State the real goal in one clear sentence.\n- Use the profile to set role, voice and standards. Skip empty profile items.\n- Replace vague wording with specific instructions. Define what a good result looks like.\n- Include the output format and depth requested.\n- Keep it as short as the task allows.\n- '+tgt+'\n- If a critical fact is missing, tell the assistant to state its assumption rather than ask, unless the behaviour setting says to ask.\n\n'+
+      'Return only the finished prompt. No preamble, no commentary, no code fences.\n\n=== SETTINGS ===\n'+meta()+'\n\n=== RAW NOTES ===\n'+th;
+    try{
+      await sampleFn(instr,{signal:controller.signal,cache:false,modelTier:'default',onText:function(o){state.ai=o.text;$('out').textContent=state.ai;}});
+      state.aiBusy=false;
+      if(!state.ai||!state.ai.trim()){state.ai=null;setStatus('Claude returned nothing. Try again.',true)}
+      render();
+    }catch(e){
+      state.aiBusy=false;
+      if(e&&e.code==='not_granted'){state.ai=null;$('sharpen').hidden=true;setStatus('Access to Claude was declined, so Sharpen is hidden. Instant build still works.',true)}
+      else if(e&&e.code==='rate_limited'){state.ai=null;setStatus('Too many requests. Wait a moment and try again.',true)}
+      else if(controller&&controller.signal.aborted){/* stopped by user or by an edit */ if(state.ai&&state.ai.trim()){setStatus('Stopped. Partial prompt kept.')}else{state.ai=null}}
+      else{state.ai=(e&&e.text&&e.text.trim())?e.text:null;setStatus('Claude could not finish. '+(state.ai?'Partial prompt kept.':'Instant build is shown instead.'),true)}
+      render();
+    }
+  });
+  $('stop').addEventListener('click',function(){if(controller)controller.abort()});
+  $('reset').addEventListener('click',function(){state.ai=null;setStatus('');render()});
+
+  /* profile tools */
+  function pstatus(m){$('pstatus').textContent=m;setTimeout(function(){$('pstatus').textContent=''},2500)}
+  $('copyProfile').addEventListener('click',function(){
+    var j=JSON.stringify(profile,null,2);
+    try{navigator.clipboard.writeText(j).then(function(){pstatus('Profile copied')},function(){$('restoreBox').hidden=false;$('restoreText').value=j;$('restoreText').select();pstatus('Select and copy the text below')})}
+    catch(e){$('restoreBox').hidden=false;$('restoreText').value=j;pstatus('Select and copy the text below')}
+  });
+  $('pasteProfile').addEventListener('click',function(){$('restoreBox').hidden=false;$('restoreText').focus()});
+  $('applyRestore').addEventListener('click',function(){
+    try{
+      var o=JSON.parse($('restoreText').value);
+      if(!o||typeof o!=='object')throw 0;
+      profile={};PROFILE_FIELDS.forEach(function(f){if(typeof o[f.k]==='string')profile[f.k]=o[f.k]});
+      store.set('pd.profile',JSON.stringify(profile));fillProfileForm();$('restoreBox').hidden=true;$('restoreText').value='';afterChange();pstatus('Profile restored');
+    }catch(e){pstatus('That is not a valid copied profile')}
+  });
+  var clearArmed=false;
+  $('clearProfile').addEventListener('click',function(){
+    var b=$('clearProfile');
+    if(!clearArmed){clearArmed=true;b.textContent='Click again to clear';setTimeout(function(){clearArmed=false;b.textContent='Clear profile'},3000);return}
+    clearArmed=false;b.textContent='Clear profile';profile={};store.set('pd.profile','{}');fillProfileForm();afterChange();
+  });
+
+  render();
+  if(!PROFILE_FIELDS.some(function(f){return clean(profile[f.k])})){setStatus('Tip: fill in My profile once and every prompt gets personalised.')}
+})();
+</script>
