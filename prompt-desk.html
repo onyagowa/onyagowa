@@ -2,37 +2,41 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
-/* Layout: two-pane workbench. Left = thoughts + settings, right = paste-ready prompt. Profile is its own tab. */
+/* Layout: branded header (double o. logo on a light plate), two-pane workbench, readiness meter above the output. Palette taken from the logo: cyan 00ECFF, teal 007680, charcoal 414246. */
 :root{
-  --bg:#f5f6f8; --surface:#ffffff; --surface2:#eef0f4; --line:#dde1e8;
-  --fg:#12161d; --muted:#5d6675; --accent:#2b4eff; --accent-fg:#ffffff; --accent-soft:#e4e9ff;
-  --good:#17803d; --warn:#a15c00; --code-bg:#0f1420; --code-fg:#e6eaf3; --code-dim:#8b95a8;
+  --bg:#f3f6f7; --surface:#ffffff; --surface2:#e9eff1; --line:#d8e0e3;
+  --fg:#12181b; --muted:#56646a; --accent:#00747f; --accent-fg:#ffffff; --accent-soft:#d9f6f9;
+  --good:#17803d; --warn:#a15c00; --bad:#b3261e; --code-bg:#0d1417; --code-fg:#e4eef0; --tagc:#00ecff;
+  --plate:#ffffff;
   --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
   --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c0f15; --surface:#141922; --surface2:#1b212c; --line:#283040;
-  --fg:#e8ecf4; --muted:#97a1b3; --accent:#6f8bff; --accent-fg:#0b0f1c; --accent-soft:#1d2744;
-  --good:#4cc37a; --warn:#e0a24a; --code-bg:#080b11; --code-fg:#e6eaf3; --code-dim:#7d889c; color-scheme:dark}}
+  --bg:#0a1012; --surface:#121a1d; --surface2:#1a2428; --line:#26343a;
+  --fg:#e6eef0; --muted:#8fa2a8; --accent:#00ecff; --accent-fg:#00262b; --accent-soft:#0c3036;
+  --good:#4cc37a; --warn:#e0a24a; --bad:#ff8a80; --code-bg:#070c0e; --code-fg:#e4eef0; --tagc:#00ecff; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0c0f15; --surface:#141922; --surface2:#1b212c; --line:#283040;
-  --fg:#e8ecf4; --muted:#97a1b3; --accent:#6f8bff; --accent-fg:#0b0f1c; --accent-soft:#1d2744;
-  --good:#4cc37a; --warn:#e0a24a; --code-bg:#080b11; --code-fg:#e6eaf3; --code-dim:#7d889c; color-scheme:dark}
+  --bg:#0a1012; --surface:#121a1d; --surface2:#1a2428; --line:#26343a;
+  --fg:#e6eef0; --muted:#8fa2a8; --accent:#00ecff; --accent-fg:#00262b; --accent-soft:#0c3036;
+  --good:#4cc37a; --warn:#e0a24a; --bad:#ff8a80; --code-bg:#070c0e; --code-fg:#e4eef0; --tagc:#00ecff; color-scheme:dark}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-body);
-  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
-.brand h1{font:600 22px/1.2 var(--font-display);margin:0;letter-spacing:-.01em}
-.brand p{margin:0;color:var(--muted);font-size:13px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.plate{background:var(--plate);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;align-items:center}
+.plate img{display:block;height:44px;width:auto}
+.brand-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.brand-text h1{font:600 21px/1.2 var(--font-display);margin:0;letter-spacing:-.01em}
+.brand-text p{margin:0;color:var(--muted);font-size:12.5px}
 .tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px}
 .tab{border:0;background:transparent;color:var(--muted);font:500 14px var(--font-body);padding:7px 14px;border-radius:7px;cursor:pointer}
-.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-.meter{font-size:11px;color:var(--muted);margin-left:6px}
-button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.meter-s{font-size:11px;color:var(--muted);margin-left:6px}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
@@ -41,15 +45,32 @@ label,.lbl{font:600 11px var(--font-body);letter-spacing:.07em;text-transform:up
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .hint{font-size:12px;color:var(--muted);margin:0}
 textarea,input[type=text],select{width:100%;font:15px/1.5 var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-textarea{resize:vertical;min-height:84px}
-#thoughts{min-height:190px;font-size:16px}
+textarea{resize:vertical;min-height:70px}
+#thoughts{min-height:170px;font-size:16px}
+#s_source{min-height:90px;font:13px/1.5 var(--font-mono)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--bg);color:var(--fg);font:500 13px var(--font-body);padding:6px 11px;border-radius:999px;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.chip.recipe{display:inline-flex;gap:8px;align-items:center;padding-right:8px}
+.chip.recipe .x{border:0;background:transparent;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
 .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .checks{display:flex;flex-direction:column;gap:8px}
-.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;color:var(--fg)}
 .check input{margin-top:3px;accent-color:var(--accent)}
+.sec{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sec-h b{font:600 15px var(--font-display)}
+.recipes{display:flex;flex-direction:column;gap:8px}
+
+.ready{display:flex;flex-direction:column;gap:8px;background:var(--surface2);border-radius:10px;padding:12px 14px}
+.ready-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ready-top b{font:600 14px var(--font-display)}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--good);width:0;transition:width .25s}
+.bar i.mid{background:var(--warn)} .bar i.low{background:var(--bad)}
+.gaps{display:flex;flex-wrap:wrap;gap:6px}
+.gap{border:1px dashed var(--muted);background:transparent;color:var(--fg);font:500 12.5px var(--font-body);padding:4px 10px;border-radius:999px;cursor:pointer}
+.gap:hover{border-style:solid;border-color:var(--accent)}
 
 .out-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .badge{font:500 11px var(--font-mono);padding:3px 8px;border-radius:6px;background:var(--surface2);color:var(--muted)}
@@ -59,30 +80,41 @@ textarea{resize:vertical;min-height:84px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn:disabled{opacity:.55;cursor:default}
 .btn.ok{background:var(--good);border-color:var(--good);color:#fff}
-.out{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:16px;font:13px/1.65 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;min-height:300px;max-height:640px;overflow:auto;margin:0}
-.tag{color:#7fa2ff}
+.out{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:16px;font:13px/1.65 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;min-height:280px;max-height:620px;overflow:auto;margin:0}
+.tag{color:var(--tagc)}
 .status{font-size:12px;color:var(--muted);min-height:18px}
 .status.err{color:var(--warn)}
 .sub{margin:0;font:600 15px var(--font-display)}
 .profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.save-row{display:flex;gap:8px;flex-wrap:wrap}
+.save-row input{flex:1 1 180px;min-width:0}
+footer{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+footer a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 <div class="wrap">
   <header>
     <div class="brand">
-      <h1>Prompt Desk</h1>
-      <p>Dump your thinking. Get a prompt that is ready to paste.</p>
+      <div class="plate"><img src="data:image/png;base64,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" alt="double o. logo" width="104" height="44"></div>
+      <div class="brand-text">
+        <h1>Prompt Desk</h1>
+        <p>A double o. production. Think once, paste once.</p>
+      </div>
     </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-compose" aria-selected="true">Compose</button>
-      <button class="tab" role="tab" id="tab-profile" aria-selected="false">My profile<span class="meter" id="meter"></span></button>
+      <button class="tab" role="tab" id="tab-profile" aria-selected="false">My profile<span class="meter-s" id="meter"></span></button>
     </div>
   </header>
 
   <section id="view-compose" class="grid">
     <div class="panel">
+      <div class="recipes" id="recipesBox" hidden>
+        <span class="lbl">Your recipes</span>
+        <div class="chips" id="recipeChips"></div>
+      </div>
       <div class="field">
         <label for="thoughts">Your thoughts</label>
         <textarea id="thoughts" placeholder="Write it the way it sits in your head. Half sentences are fine."></textarea>
@@ -92,6 +124,39 @@ textarea{resize:vertical;min-height:84px}
         <span class="lbl">What kind of task</span>
         <div class="chips" id="taskChips"></div>
       </div>
+
+      <div class="sec">
+        <div class="sec-h"><b>Close the gaps now</b><span class="hint">Each answer here removes a question Claude would otherwise ask you.</span></div>
+        <div class="field">
+          <label for="s_outcome">What does done look like?</label>
+          <input type="text" id="s_outcome" placeholder="e.g. a reply I can send today that holds the deadline and sets a paid scope">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="s_for">Who receives the result?</label>
+            <input type="text" id="s_for" placeholder="e.g. the client's project lead">
+          </div>
+          <div class="field">
+            <label for="s_limits">Length or deadline</label>
+            <input type="text" id="s_limits" placeholder="e.g. under 150 words, send by 3pm">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="s_include">Must include</label>
+            <input type="text" id="s_include" placeholder="e.g. new date, reduced scope, price">
+          </div>
+          <div class="field">
+            <label for="s_avoid">Must avoid</label>
+            <input type="text" id="s_avoid" placeholder="e.g. blame, apologising twice">
+          </div>
+        </div>
+        <div class="field">
+          <label for="s_source">Material to work from</label>
+          <textarea id="s_source" placeholder="Paste the email, notes, data or draft Claude should use. Leave empty if there is none."></textarea>
+        </div>
+      </div>
+
       <div class="row">
         <div class="field">
           <label for="format">Output shape</label>
@@ -114,16 +179,31 @@ textarea{resize:vertical;min-height:84px}
         </div>
       </div>
       <div class="field">
-        <span class="lbl">Behaviour</span>
+        <span class="lbl">One-shot behaviour</span>
         <div class="checks">
-          <label class="check"><input type="checkbox" id="optAsk"> <span>Ask up to 3 questions first if something blocks a good answer</span></label>
-          <label class="check"><input type="checkbox" id="optRec" checked> <span>Lead with a recommendation, then the reasoning</span></label>
-          <label class="check"><input type="checkbox" id="optCheck" checked> <span>Check the answer against my goal before replying</span></label>
+          <label class="check"><input type="checkbox" id="optRec" checked> <span>Lead with the answer or recommendation, then the reasoning</span></label>
+          <label class="check"><input type="checkbox" id="optCheck" checked> <span>Check the result against my goal before replying</span></label>
+          <label class="check"><input type="checkbox" id="optTweaks" checked> <span>End with 3 one-word tweaks I can reply with (shorter, warmer, firmer)</span></label>
+          <label class="check"><input type="checkbox" id="optVar"> <span>Give two different versions so I can pick instead of asking again</span></label>
+          <label class="check"><input type="checkbox" id="optAsk"> <span>Allow up to 3 questions first, only if something truly blocks the answer</span></label>
         </div>
+      </div>
+      <div class="sec">
+        <div class="sec-h"><b>Repeat task?</b><span class="hint">Save this setup and load it in one click next time.</span></div>
+        <div class="save-row">
+          <input type="text" id="recipeName" placeholder="Recipe name, e.g. Client deadline reply" aria-label="Recipe name">
+          <button class="btn" id="saveRecipe">Save as recipe</button>
+        </div>
+        <div class="status" id="rstatus" aria-live="polite"></div>
       </div>
     </div>
 
     <div class="panel">
+      <div class="ready" id="ready">
+        <div class="ready-top"><b id="readyLabel">Ready to paste</b><span class="hint" id="readyScore"></span></div>
+        <div class="bar"><i id="readyBar"></i></div>
+        <div class="gaps" id="gaps"></div>
+      </div>
       <div class="out-head">
         <span class="sub">Your prompt</span>
         <span class="badge" id="badge">instant build</span>
@@ -136,7 +216,7 @@ textarea{resize:vertical;min-height:84px}
         <button class="btn" id="reset" hidden>Back to instant build</button>
       </div>
       <div class="status" id="status" aria-live="polite"></div>
-      <p class="hint">Instant build is assembled on this page from your profile and thoughts. Sharpen asks Claude to rewrite it into a tighter prompt first.</p>
+      <p class="hint">Instant build is assembled on this page. Sharpen asks Claude to rewrite it into a tighter prompt first. Closing the gaps on the left is what saves you follow-up chats.</p>
     </div>
   </section>
 
@@ -158,6 +238,11 @@ textarea{resize:vertical;min-height:84px}
       <div class="actions"><button class="btn primary" id="applyRestore">Restore</button></div>
     </div>
   </section>
+
+  <footer>
+    <span>Prompt Desk · a double o. production</span>
+    <a href="https://double-o.co.ke" target="_blank" rel="noopener">double-o.co.ke</a>
+  </footer>
 </div>
 
 <script>
@@ -173,14 +258,14 @@ textarea{resize:vertical;min-height:84px}
     {k:'never',l:'Never do',t:'area',p:'Hedge, flatter, invent facts, use jargon, repeat my question'}
   ];
   var TASKS=[
-    {id:'write',l:'Write',role:'senior writer and editor',goal:'Produce a finished draft I can use with light edits.'},
-    {id:'plan',l:'Plan',role:'chief of staff',goal:'Turn this into a concrete plan with owners, order and deadlines.'},
-    {id:'decide',l:'Decide',role:'decision advisor',goal:'Help me choose, with a clear recommendation and what would change it.'},
-    {id:'research',l:'Research',role:'research analyst',goal:'Find, compare and synthesise what matters, and flag what is uncertain.'},
-    {id:'analyze',l:'Analyse',role:'analyst',goal:'Analyse what I give you and tell me what it means and what to do next.'},
-    {id:'code',l:'Build',role:'senior engineer',goal:'Produce working, minimal, well-explained code or technical steps.'},
-    {id:'summarize',l:'Summarise',role:'executive summariser',goal:'Condense this to what I need to act on.'},
-    {id:'brainstorm',l:'Ideate',role:'creative strategist',goal:'Generate strong, varied options, then rank them.'}
+    {id:'write',l:'Write',role:'senior writer and editor',goal:'Produce a finished draft I can use with light edits.',needsFor:true,needsSource:false},
+    {id:'plan',l:'Plan',role:'chief of staff',goal:'Turn this into a concrete plan with owners, order and deadlines.',needsFor:false,needsSource:false},
+    {id:'decide',l:'Decide',role:'decision advisor',goal:'Help me choose, with a clear recommendation and what would change it.',needsFor:false,needsSource:false},
+    {id:'research',l:'Research',role:'research analyst',goal:'Find, compare and synthesise what matters, and flag what is uncertain.',needsFor:false,needsSource:false},
+    {id:'analyze',l:'Analyse',role:'analyst',goal:'Analyse what I give you and tell me what it means and what to do next.',needsFor:false,needsSource:true},
+    {id:'code',l:'Build',role:'senior engineer',goal:'Produce working, minimal, well-explained code or technical steps.',needsFor:false,needsSource:false},
+    {id:'summarize',l:'Summarise',role:'executive summariser',goal:'Condense this to what I need to act on.',needsFor:false,needsSource:true},
+    {id:'brainstorm',l:'Ideate',role:'creative strategist',goal:'Generate strong, varied options, then rank them.',needsFor:false,needsSource:false}
   ];
   var FORMATS=[
     ['best','Best fit for the task'],['plain','Short plain-text answer'],['bullets','Bullet points'],
@@ -202,16 +287,23 @@ textarea{resize:vertical;min-height:84px}
     standard:'Be complete without padding.',
     thorough:'Go deep. Cover edge cases, trade-offs and what I may have missed.'
   };
+  var SHARP=['outcome','for','limits','include','avoid','source'];
   var EXAMPLE='need to reply to the client who keeps pushing the deadline. project is 2 weeks behind because their team was slow with approvals. want to keep the relationship but stop the free extras. maybe offer a smaller scope for the original date?';
+  var EX_SHARP={outcome:'a reply I can send today that holds the deadline and sets a paid scope',for:"the client's project lead",limits:'under 150 words',include:'new date, reduced scope option',avoid:'blame, apologising twice',source:''};
 
   var $=function(id){return document.getElementById(id)};
   var store={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  function clean(s){return (s||'').trim()}
+  function parse(k,d){try{var v=JSON.parse(store.get(k));return v==null?d:v}catch(e){return d}}
 
-  var profile={}; try{profile=JSON.parse(store.get('pd.profile')||'{}')||{}}catch(e){profile={}}
-  var state={task:'write',format:'best',depth:'standard',target:'claude',ask:false,rec:true,check:true,ai:null,aiBusy:false};
-  var savedState=null; try{savedState=JSON.parse(store.get('pd.state')||'null')}catch(e){}
-  if(savedState){['task','format','depth','target','ask','rec','check'].forEach(function(k){if(savedState[k]!==undefined)state[k]=savedState[k]})}
+  var profile=parse('pd.profile',{});
+  var state={task:'write',format:'best',depth:'standard',target:'claude',ask:false,rec:true,check:true,tweaks:true,variants:false,ai:null,aiBusy:false};
+  var ss=parse('pd.state',null);
+  if(ss){['task','format','depth','target','ask','rec','check','tweaks','variants'].forEach(function(k){if(ss[k]!==undefined)state[k]=ss[k]})}
+  var recipes=parse('pd.recipes',[]);
   var savedThoughts=store.get('pd.thoughts');
+  var isExample=savedThoughts===null;
+  var savedSharp=parse('pd.sharp',null);
 
   /* profile form */
   var pg=$('profileGrid');
@@ -236,18 +328,23 @@ textarea{resize:vertical;min-height:84px}
   var fsel=$('format');
   FORMATS.forEach(function(f){var o=document.createElement('option');o.value=f[0];o.textContent=f[1];fsel.appendChild(o)});
   $('thoughts').value=savedThoughts!==null?savedThoughts:EXAMPLE;
-  var isExample=savedThoughts===null;
   $('exampleHint').hidden=!isExample;
+  SHARP.forEach(function(k){
+    var v=savedSharp?(savedSharp[k]||''):(isExample?EX_SHARP[k]:'');
+    $('s_'+k).value=v;
+    $('s_'+k).addEventListener('input',function(){isExample=false;$('exampleHint').hidden=true;saveSharp();afterChange()});
+  });
+  function saveSharp(){var o={};SHARP.forEach(function(k){o[k]=$('s_'+k).value});store.set('pd.sharp',JSON.stringify(o))}
   fsel.value=state.format;$('depth').value=state.depth;$('target').value=state.target;
-  $('optAsk').checked=state.ask;$('optRec').checked=state.rec;$('optCheck').checked=state.check;
+  $('optAsk').checked=state.ask;$('optRec').checked=state.rec;$('optCheck').checked=state.check;$('optTweaks').checked=state.tweaks;$('optVar').checked=state.variants;
 
   $('thoughts').addEventListener('input',function(){isExample=false;$('exampleHint').hidden=true;store.set('pd.thoughts',$('thoughts').value);afterChange()});
   fsel.addEventListener('change',function(){state.format=fsel.value;afterChange()});
   $('depth').addEventListener('change',function(){state.depth=$('depth').value;afterChange()});
   $('target').addEventListener('change',function(){state.target=$('target').value;afterChange()});
-  $('optAsk').addEventListener('change',function(){state.ask=$('optAsk').checked;afterChange()});
-  $('optRec').addEventListener('change',function(){state.rec=$('optRec').checked;afterChange()});
-  $('optCheck').addEventListener('change',function(){state.check=$('optCheck').checked;afterChange()});
+  [['optAsk','ask'],['optRec','rec'],['optCheck','check'],['optTweaks','tweaks'],['optVar','variants']].forEach(function(p){
+    $(p[0]).addEventListener('change',function(){state[p[1]]=$(p[0]).checked;afterChange()});
+  });
 
   /* tabs */
   function showTab(name){
@@ -259,11 +356,10 @@ textarea{resize:vertical;min-height:84px}
   $('tab-profile').addEventListener('click',function(){showTab('profile')});
 
   function taskObj(){return TASKS.filter(function(t){return t.id===state.task})[0]}
-  function clean(s){return (s||'').trim()}
+  function sv(k){return clean($('s_'+k).value)}
 
   function aboutLines(){
-    var L=[];
-    var p=profile;
+    var L=[],p=profile;
     if(clean(p.name))L.push('Name: '+clean(p.name));
     if(clean(p.role))L.push('What I do: '+clean(p.role));
     if(clean(p.focus))L.push('Current focus: '+clean(p.focus));
@@ -274,11 +370,14 @@ textarea{resize:vertical;min-height:84px}
   }
   function ruleLines(){
     var R=[];
+    R.push('Deliver the finished result in this single reply. Do not ask for confirmation before starting.');
     if(clean(profile.prefs))R.push('How I like answers: '+clean(profile.prefs));
     if(clean(profile.never))R.push('Never: '+clean(profile.never));
-    R.push(state.ask?'If something blocks a good answer, ask at most 3 short questions first. Otherwise do not ask, proceed.':'Do not ask questions. Make reasonable assumptions and list them in one line at the top.');
+    R.push(state.ask?'Ask questions only if the answer would be wrong without them, at most 3, all in one message. Otherwise proceed.':'Do not ask questions. Where something is missing, make the most reasonable assumption and list your assumptions in one line at the top.');
     if(state.rec)R.push('Open with your recommendation or the answer, then the reasoning.');
-    if(state.check)R.push('Before replying, check the answer against my goal and fix anything that misses it. Do not show this check.');
+    if(state.variants)R.push('Give two clearly different versions, labelled A and B, and say in one line when to pick each.');
+    if(state.check)R.push('Before replying, check the result against my goal and success criteria and fix anything that misses. Do not show this check.');
+    if(state.tweaks)R.push('End with exactly three one-word tweaks I can reply with to adjust the result, for example: shorter, warmer, firmer. Make them specific to this task.');
     R.push('Do not invent facts, names or numbers. Mark anything uncertain.');
     return R;
   }
@@ -288,42 +387,69 @@ textarea{resize:vertical;min-height:84px}
     var about=aboutLines(), rules=ruleLines();
     var who=clean(profile.name)||'me';
     var role='You are my '+t.role+(about.length?', working for '+who+'.':'.');
+    var claude=state.target==='claude';
+    function sec(tag,title,body){return claude?'<'+tag+'>\n'+body+'\n</'+tag+'>':'# '+title+'\n'+body}
     var out=[];
-    if(state.target==='claude'){
-      out.push('<role>\n'+role+'\n</role>');
-      if(about.length)out.push('<about_me>\n'+about.join('\n')+'\n</about_me>');
-      out.push('<task>\n'+t.goal+'\nBelow are my raw, unedited notes. Work out the real goal behind them and do the task.\n</task>');
-      out.push('<my_notes>\n'+th+'\n</my_notes>');
-      out.push('<output>\nFormat: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]+'\n</output>');
-      out.push('<rules>\n'+rules.map(function(r){return '- '+r}).join('\n')+'\n</rules>');
-    }else{
-      out.push('# Role\n'+role);
-      if(about.length)out.push('# About me\n'+about.join('\n'));
-      out.push('# Task\n'+t.goal+'\nBelow are my raw, unedited notes. Work out the real goal behind them and do the task.');
-      out.push('# My notes\n'+th);
-      out.push('# Output\nFormat: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]);
-      out.push('# Rules\n'+rules.map(function(r){return '- '+r}).join('\n'));
-    }
+    out.push(sec('role','Role',role));
+    if(about.length)out.push(sec('about_me','About me',about.join('\n')));
+    out.push(sec('task','Task',t.goal+'\nBelow are my raw, unedited notes. Work out the real goal behind them and do the task.'));
+    out.push(sec('my_notes','My notes',th));
+    if(sv('source'))out.push(sec('source_material','Material to work from',sv('source')));
+    if(sv('outcome'))out.push(sec('success_criteria','Success criteria','The result is right when: '+sv('outcome')));
+    if(sv('for'))out.push(sec('audience','Audience','The result goes to: '+sv('for')));
+    var c=[];
+    if(sv('include'))c.push('Must include: '+sv('include'));
+    if(sv('avoid'))c.push('Must avoid: '+sv('avoid'));
+    if(sv('limits'))c.push('Length or deadline: '+sv('limits'));
+    if(c.length)out.push(sec('constraints','Constraints',c.join('\n')));
+    out.push(sec('output','Output','Format: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]));
+    out.push(sec('rules','Rules',rules.map(function(r){return '- '+r}).join('\n')));
     return out.join('\n\n');
   }
 
   function meta(){
     var t=taskObj();
+    var extra=[];
+    if(sv('outcome'))extra.push('Success criteria: '+sv('outcome'));
+    if(sv('for'))extra.push('Audience for the result: '+sv('for'));
+    if(sv('include'))extra.push('Must include: '+sv('include'));
+    if(sv('avoid'))extra.push('Must avoid: '+sv('avoid'));
+    if(sv('limits'))extra.push('Length or deadline: '+sv('limits'));
     return 'Task type: '+t.l+' (act as: '+t.role+')\nGoal of this task type: '+t.goal+
       '\nOutput format wanted: '+FORMAT_TEXT[state.format]+'\nDepth: '+DEPTH_TEXT[state.depth]+
-      '\nProfile:\n'+(aboutLines().concat(ruleLines()).join('\n')||'(empty)');
+      '\n'+extra.join('\n')+
+      '\nProfile and behaviour rules (keep these in the prompt):\n'+(aboutLines().concat(ruleLines()).join('\n')||'(empty)');
+  }
+
+  /* readiness */
+  function readiness(){
+    var t=taskObj(),score=100,gaps=[];
+    var th=clean($('thoughts').value);
+    if(th.length<40){score-=30;gaps.push({l:'Add more detail to your thoughts',f:function(){$('thoughts').focus()}})}
+    if(!sv('outcome')){score-=25;gaps.push({l:'Say what done looks like',f:function(){$('s_outcome').focus()}})}
+    if((t.needsFor||state.format==='email')&&!sv('for')){score-=15;gaps.push({l:'Say who receives it',f:function(){$('s_for').focus()}})}
+    if(t.needsSource&&!sv('source')&&th.length<200){score-=20;gaps.push({l:'Paste the material to work from',f:function(){$('s_source').focus()}})}
+    var filled=PROFILE_FIELDS.filter(function(f){return clean(profile[f.k])}).length;
+    if(filled<3){score-=10;gaps.push({l:'Fill 3 or more profile fields',f:function(){showTab('profile')}})}
+    return {score:Math.max(score,0),gaps:gaps};
+  }
+  function renderReady(){
+    var r=readiness(),bar=$('readyBar');
+    bar.style.width=r.score+'%';
+    bar.className=r.score>=80?'':(r.score>=55?'mid':'low');
+    $('readyLabel').textContent=r.score>=80?'Ready to paste':(r.score>=55?'Good, but a gap may cost you a follow-up':'Likely to need follow-ups');
+    $('readyScore').textContent=r.score+'% complete';
+    var g=$('gaps');g.textContent='';
+    r.gaps.forEach(function(x){var b=document.createElement('button');b.type='button';b.className='gap';b.textContent='+ '+x.l;b.addEventListener('click',x.f);g.appendChild(b)});
   }
 
   /* render */
+  function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
   function render(){
-    document.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed',c.dataset.id===state.task)});
-    var text=state.ai!==null?state.ai:buildPrompt();
+    document.querySelectorAll('#taskChips .chip').forEach(function(c){c.setAttribute('aria-pressed',c.dataset.id===state.task)});
     var out=$('out');
-    out.textContent=text;
-    if(state.ai===null){
-      /* colour the XML tags for scanning; text stays plain for copying */
-      out.innerHTML=escapeHtml(text).replace(/(&lt;\/?[a-z_]+&gt;)/g,'<span class="tag">$1</span>');
-    }
+    if(state.ai!==null){out.textContent=state.ai}
+    else{out.innerHTML=escapeHtml(buildPrompt()).replace(/(&lt;\/?[a-z_]+&gt;)/g,'<span class="tag">$1</span>')}
     var b=$('badge');
     b.textContent=state.ai!==null?(state.aiBusy?'Claude is writing':'sharpened by Claude'):'instant build';
     b.className='badge'+(state.ai!==null?' ai':'');
@@ -332,19 +458,52 @@ textarea{resize:vertical;min-height:84px}
     $('sharpen').disabled=state.aiBusy;
     var filled=PROFILE_FIELDS.filter(function(f){return clean(profile[f.k])}).length;
     $('meter').textContent=filled+'/'+PROFILE_FIELDS.length;
+    renderReady();
+    renderRecipes();
   }
-  function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
   function plainText(){return $('out').textContent}
 
   var controller=null;
   function afterChange(){
     if(controller){controller.abort();controller=null}
     state.ai=null;state.aiBusy=false;setStatus('');
-    store.set('pd.state',JSON.stringify({task:state.task,format:state.format,depth:state.depth,target:state.target,ask:state.ask,rec:state.rec,check:state.check}));
+    store.set('pd.state',JSON.stringify({task:state.task,format:state.format,depth:state.depth,target:state.target,ask:state.ask,rec:state.rec,check:state.check,tweaks:state.tweaks,variants:state.variants}));
     render();
   }
-
   function setStatus(msg,err){var s=$('status');s.textContent=msg;s.className='status'+(err?' err':'')}
+
+  /* recipes */
+  function renderRecipes(){
+    var box=$('recipesBox'),c=$('recipeChips');c.textContent='';
+    box.hidden=!recipes.length;
+    recipes.forEach(function(r,i){
+      var w=document.createElement('span');w.className='chip recipe';
+      var b=document.createElement('button');b.type='button';b.textContent=r.name;b.style.cssText='border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0';
+      b.addEventListener('click',function(){loadRecipe(r)});
+      var x=document.createElement('button');x.type='button';x.className='x';x.textContent='×';x.setAttribute('aria-label','Delete recipe '+r.name);
+      x.addEventListener('click',function(){recipes.splice(i,1);store.set('pd.recipes',JSON.stringify(recipes));renderRecipes()});
+      w.appendChild(b);w.appendChild(x);c.appendChild(w);
+    });
+  }
+  function rstatus(m){$('rstatus').textContent=m;setTimeout(function(){$('rstatus').textContent=''},2500)}
+  $('saveRecipe').addEventListener('click',function(){
+    var name=clean($('recipeName').value);
+    if(!name){rstatus('Give the recipe a name first.');return}
+    var sh={};SHARP.forEach(function(k){if(k!=='source')sh[k]=$('s_'+k).value});
+    var rec={name:name,thoughts:$('thoughts').value,state:{task:state.task,format:state.format,depth:state.depth,target:state.target,ask:state.ask,rec:state.rec,check:state.check,tweaks:state.tweaks,variants:state.variants},sharp:sh};
+    recipes=recipes.filter(function(r){return r.name!==name});recipes.unshift(rec);recipes=recipes.slice(0,12);
+    store.set('pd.recipes',JSON.stringify(recipes));$('recipeName').value='';renderRecipes();rstatus('Saved. Find it at the top of this panel.');
+  });
+  function loadRecipe(r){
+    isExample=false;$('exampleHint').hidden=true;
+    $('thoughts').value=r.thoughts||'';store.set('pd.thoughts',$('thoughts').value);
+    Object.keys(r.state||{}).forEach(function(k){state[k]=r.state[k]});
+    SHARP.forEach(function(k){$('s_'+k).value=(r.sharp&&r.sharp[k])||''});
+    fsel.value=state.format;$('depth').value=state.depth;$('target').value=state.target;
+    $('optAsk').checked=state.ask;$('optRec').checked=state.rec;$('optCheck').checked=state.check;$('optTweaks').checked=state.tweaks;$('optVar').checked=state.variants;
+    saveSharp();afterChange();
+    $('thoughts').focus();
+  }
 
   /* copy */
   function fallbackCopy(){
@@ -375,11 +534,12 @@ textarea{resize:vertical;min-height:84px}
     controller=new AbortController();
     state.aiBusy=true;state.ai='';render();setStatus('');
     var tgt=state.target==='claude'
-      ?'The prompt will be pasted into Claude. Structure it with XML tags such as <role>, <about_me>, <task>, <context>, <output>, <rules>.'
+      ?'The prompt will be pasted into Claude. Structure it with XML tags such as <role>, <about_me>, <task>, <context>, <source_material>, <success_criteria>, <constraints>, <output>, <rules>.'
       :'The prompt will be pasted into a general AI chat tool. Structure it with plain markdown headings.';
-    var instr='You write prompts for an AI assistant. Turn the person\'s raw notes into one prompt that, when pasted, gets the task done in one go.\n\n'+
-      'Rules for the prompt you write:\n- Keep every fact from the notes. Never invent details.\n- State the real goal in one clear sentence.\n- Use the profile to set role, voice and standards. Skip empty profile items.\n- Replace vague wording with specific instructions. Define what a good result looks like.\n- Include the output format and depth requested.\n- Keep it as short as the task allows.\n- '+tgt+'\n- If a critical fact is missing, tell the assistant to state its assumption rather than ask, unless the behaviour setting says to ask.\n\n'+
-      'Return only the finished prompt. No preamble, no commentary, no code fences.\n\n=== SETTINGS ===\n'+meta()+'\n\n=== RAW NOTES ===\n'+th;
+    var instr='You write prompts for an AI assistant. Turn the person\'s raw notes into one prompt that, when pasted, gets the task fully done in a single reply, so the person never has to follow up.\n\n'+
+      'Rules for the prompt you write:\n- Keep every fact from the notes and the material. Never invent details.\n- State the real goal in one clear sentence.\n- Use the profile to set role, voice and standards. Skip empty profile items.\n- Replace vague wording with specific instructions. Define what a good result looks like, using the success criteria if given.\n- Infer anything obvious that the notes leave out, and tell the assistant which assumptions to state in one line rather than ask.\n- Include the output format and depth requested.\n- Keep every behaviour rule listed in the settings, in your own tighter wording.\n- Copy any material to work from into the prompt in full, inside its own section.\n- Keep it as short as the task allows.\n- '+tgt+'\n\n'+
+      'Return only the finished prompt. No preamble, no commentary, no code fences.\n\n=== SETTINGS ===\n'+meta()+
+      (sv('source')?'\n\n=== MATERIAL TO WORK FROM ===\n'+sv('source'):'')+'\n\n=== RAW NOTES ===\n'+th;
     try{
       await sampleFn(instr,{signal:controller.signal,cache:false,modelTier:'default',onText:function(o){state.ai=o.text;$('out').textContent=state.ai;}});
       state.aiBusy=false;
@@ -389,7 +549,7 @@ textarea{resize:vertical;min-height:84px}
       state.aiBusy=false;
       if(e&&e.code==='not_granted'){state.ai=null;$('sharpen').hidden=true;setStatus('Access to Claude was declined, so Sharpen is hidden. Instant build still works.',true)}
       else if(e&&e.code==='rate_limited'){state.ai=null;setStatus('Too many requests. Wait a moment and try again.',true)}
-      else if(controller&&controller.signal.aborted){/* stopped by user or by an edit */ if(state.ai&&state.ai.trim()){setStatus('Stopped. Partial prompt kept.')}else{state.ai=null}}
+      else if(controller&&controller.signal.aborted){if(state.ai&&state.ai.trim()){setStatus('Stopped. Partial prompt kept.')}else{state.ai=null}}
       else{state.ai=(e&&e.text&&e.text.trim())?e.text:null;setStatus('Claude could not finish. '+(state.ai?'Partial prompt kept.':'Instant build is shown instead.'),true)}
       render();
     }
@@ -401,8 +561,8 @@ textarea{resize:vertical;min-height:84px}
   function pstatus(m){$('pstatus').textContent=m;setTimeout(function(){$('pstatus').textContent=''},2500)}
   $('copyProfile').addEventListener('click',function(){
     var j=JSON.stringify(profile,null,2);
-    try{navigator.clipboard.writeText(j).then(function(){pstatus('Profile copied')},function(){$('restoreBox').hidden=false;$('restoreText').value=j;$('restoreText').select();pstatus('Select and copy the text below')})}
-    catch(e){$('restoreBox').hidden=false;$('restoreText').value=j;pstatus('Select and copy the text below')}
+    function show(){$('restoreBox').hidden=false;$('restoreText').value=j;$('restoreText').select();pstatus('Select and copy the text below')}
+    try{navigator.clipboard.writeText(j).then(function(){pstatus('Profile copied')},show)}catch(e){show()}
   });
   $('pasteProfile').addEventListener('click',function(){$('restoreBox').hidden=false;$('restoreText').focus()});
   $('applyRestore').addEventListener('click',function(){
@@ -421,6 +581,5 @@ textarea{resize:vertical;min-height:84px}
   });
 
   render();
-  if(!PROFILE_FIELDS.some(function(f){return clean(profile[f.k])})){setStatus('Tip: fill in My profile once and every prompt gets personalised.')}
 })();
 </script>
