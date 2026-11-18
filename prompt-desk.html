@@ -91,6 +91,24 @@ textarea{resize:vertical;min-height:70px}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .save-row{display:flex;gap:8px;flex-wrap:wrap}
 .save-row input{flex:1 1 180px;min-width:0}
+[hidden]{display:none!important}
+.lbl-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.mic{border:1px solid var(--line);background:var(--bg);color:var(--fg);font:500 12px var(--font-body);padding:4px 10px;border-radius:999px;cursor:pointer}
+.mic[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.small{padding:5px 11px;font-size:12.5px}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.att-list{display:flex;flex-direction:column;gap:10px}
+.att{display:flex;gap:12px;align-items:flex-start;background:var(--surface2);border-radius:10px;padding:10px;min-width:0}
+.att .thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;flex:none;background:var(--bg)}
+.att-meta{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.att-name{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.att-meta input[type=text],.att-meta textarea{font-size:13.5px;padding:7px 10px}
+.att-meta textarea{min-height:64px}
+.att-meta audio{width:100%;max-width:100%;height:36px}
+.att-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.att .x{border:0;background:transparent;color:var(--muted);font:500 12.5px var(--font-body);cursor:pointer;padding:2px 4px;text-decoration:underline}
+.attnote{background:var(--accent-soft);color:var(--fg);border-radius:8px;padding:9px 12px;font-size:13px}
 footer{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
 footer a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -118,7 +136,7 @@ footer a{color:var(--accent)}
         <div class="chips" id="recipeChips"></div>
       </div>
       <div class="field">
-        <label for="thoughts">Your thoughts</label>
+        <div class="lbl-row"><label for="thoughts">Your thoughts</label><button class="mic" id="micThoughts" type="button" hidden>● Speak</button></div>
         <textarea id="thoughts" placeholder="Write it the way it sits in your head. Half sentences are fine."></textarea>
         <p class="hint" id="exampleHint">Example text is loaded so you can see the output. Replace it with your own.</p>
       </div>
@@ -157,6 +175,27 @@ footer a{color:var(--accent)}
           <label for="s_source">Material to work from</label>
           <textarea id="s_source" placeholder="Paste the email, notes, data or draft Claude should use. Leave empty if there is none."></textarea>
         </div>
+      </div>
+
+      <div class="sec" id="attachSec">
+        <div class="sec-h"><b>Pictures and audio</b><span class="hint">Screenshots, photos, voice notes. Not saved between visits.</span></div>
+        <div class="drop" id="drop">
+          <div class="actions">
+            <button class="btn" id="addImg" type="button">Add pictures</button>
+            <button class="btn" id="addAud" type="button">Add audio</button>
+          </div>
+          <p class="hint">Or drop files here, or paste a screenshot anywhere on the page.</p>
+          <input type="file" id="fileImg" accept="image/*" multiple hidden>
+          <input type="file" id="fileAud" accept="audio/*" multiple hidden>
+        </div>
+        <div class="att-list" id="imgList"></div>
+        <div class="field" id="imgNotesBox" hidden>
+          <div class="lbl-row"><label for="imgNotes">What the pictures show</label><button class="btn small" id="readImgs" type="button" hidden>Read with Claude</button></div>
+          <textarea id="imgNotes" placeholder="Describe the pictures, or let Claude read them for you. This text goes into your prompt."></textarea>
+        </div>
+        <div class="att-list" id="audList"></div>
+        <p class="hint" id="audHint" hidden>A page cannot turn an audio file into text. Play it and use Speak to dictate what it says, or paste a transcript. The prompt carries the transcript.</p>
+        <div class="status" id="attStatus" aria-live="polite"></div>
       </div>
 
       <div class="row">
@@ -211,6 +250,7 @@ footer a{color:var(--accent)}
         <span class="badge" id="badge">instant build</span>
       </div>
       <pre class="out" id="out" tabindex="0"></pre>
+      <div class="attnote" id="attNote" hidden></div>
       <div class="actions">
         <button class="btn primary" id="copy">Copy prompt</button>
         <button class="btn" id="sharpen" hidden>Sharpen with Claude</button>
@@ -306,6 +346,7 @@ footer a{color:var(--accent)}
   var savedThoughts=store.get('pd.thoughts');
   var isExample=savedThoughts===null;
   var savedSharp=parse('pd.sharp',null);
+  var images=[],audios=[],attId=0,imgLimits=null,imgCtl=null,mics=[];
 
   /* profile form */
   var pg=$('profileGrid');
@@ -380,6 +421,8 @@ footer a{color:var(--accent)}
     if(state.variants)R.push('Give two clearly different versions, labelled A and B, and say in one line when to pick each.');
     if(state.check)R.push('Before replying, check the result against my goal and success criteria and fix anything that misses. Do not show this check.');
     if(state.tweaks)R.push('End with exactly three one-word tweaks I can reply with to adjust the result, for example: shorter, warmer, firmer. Make them specific to this task.');
+    if(images.length)R.push('Look closely at the attached images before answering. Quote any text from them that you rely on.');
+    if(audios.length)R.push('Treat the audio transcripts as spoken, so expect filler words and fix obvious mishearings from context.');
     R.push('Do not invent facts, names or numbers. Mark anything uncertain.');
     return R;
   }
@@ -397,6 +440,13 @@ footer a{color:var(--accent)}
     out.push(sec('task','Task',t.goal+'\nBelow are my raw, unedited notes. Work out the real goal behind them and do the task.'));
     out.push(sec('my_notes','My notes',th));
     if(sv('source'))out.push(sec('source_material','Material to work from',sv('source')));
+    if(images.length){
+      out.push(sec('attached_images','Attached images','I am attaching '+images.length+' image'+(images.length>1?'s':'')+' to this message. Treat '+(images.length>1?'them':'it')+' as part of the input.\n'+images.map(function(im,i){return 'Image '+(i+1)+': '+im.file.name+(clean(im.note)?' ('+clean(im.note)+')':'')}).join('\n')));
+      if(clean($('imgNotes').value))out.push(sec('image_notes','What the images show',clean($('imgNotes').value)));
+    }
+    if(audios.length){
+      out.push(sec('audio_transcripts','Audio transcripts','The audio files are not attached. Work from these transcripts.\n\n'+audios.map(function(a,i){return 'Audio '+(i+1)+' ('+a.file.name+(a.dur?', '+a.dur:'')+'):\n'+(clean(a.transcript)||'[no transcript provided]')}).join('\n\n')));
+    }
     if(sv('outcome'))out.push(sec('success_criteria','Success criteria','The result is right when: '+sv('outcome')));
     if(sv('for'))out.push(sec('audience','Audience','The result goes to: '+sv('for')));
     var c=[];
@@ -431,6 +481,8 @@ footer a{color:var(--accent)}
     if(!sv('outcome')){score-=25;gaps.push({l:'Say what done looks like',f:function(){$('s_outcome').focus()}})}
     if((t.needsFor||state.format==='email')&&!sv('for')){score-=15;gaps.push({l:'Say who receives it',f:function(){$('s_for').focus()}})}
     if(t.needsSource&&!sv('source')&&th.length<200){score-=20;gaps.push({l:'Paste the material to work from',f:function(){$('s_source').focus()}})}
+    if(images.length&&!clean($('imgNotes').value)&&!images.some(function(im){return clean(im.note)})){score-=10;gaps.push({l:'Say what the pictures show',f:function(){var e=$('a_i_'+images[0].id);if(e)e.focus()}})}
+    audios.forEach(function(a,i){if(!clean(a.transcript)){score-=15;gaps.push({l:'Add a transcript for audio '+(i+1),f:function(){var e=$('a_a_'+a.id);if(e)e.focus()}})}});
     var filled=PROFILE_FIELDS.filter(function(f){return clean(profile[f.k])}).length;
     if(filled<3){score-=10;gaps.push({l:'Fill 3 or more profile fields',f:function(){showTab('profile')}})}
     return {score:Math.max(score,0),gaps:gaps};
@@ -462,6 +514,11 @@ footer a{color:var(--accent)}
     $('meter').textContent=filled+'/'+PROFILE_FIELDS.length;
     renderReady();
     renderRecipes();
+    var parts=[];
+    if(images.length)parts.push(images.length+' picture'+(images.length>1?'s':''));
+    var nt=$('attNote');
+    nt.hidden=!parts.length;
+    if(parts.length)nt.textContent='Paste this prompt, then attach the '+parts.join(' and ')+' in the same message. The prompt already refers to '+(images.length>1?'them':'it')+'.';
   }
   function plainText(){return $('out').textContent}
 
@@ -524,7 +581,7 @@ footer a{color:var(--accent)}
     try{
       if(window.claude&&window.claude.use){
         var s=await window.claude.use('sample');
-        if(s){sampleFn=s;$('sharpen').hidden=false}
+        if(s){sampleFn=s;$('sharpen').hidden=false;try{var L=await s.limits();if(L&&L.images){imgLimits=L.images;updateAttachUI()}}catch(e){}}
       }
     }catch(e){}
   })();
@@ -541,7 +598,7 @@ footer a{color:var(--accent)}
     var instr='You write prompts for an AI assistant. Turn the person\'s raw notes into one prompt that, when pasted, gets the task fully done in a single reply, so the person never has to follow up.\n\n'+
       'Rules for the prompt you write:\n- Keep every fact from the notes and the material. Never invent details.\n- State the real goal in one clear sentence.\n- Use the profile to set role, voice and standards. Skip empty profile items.\n- Replace vague wording with specific instructions. Define what a good result looks like, using the success criteria if given.\n- Infer anything obvious that the notes leave out, and tell the assistant which assumptions to state in one line rather than ask.\n- Include the output format and depth requested.\n- Keep every behaviour rule listed in the settings, in your own tighter wording.\n- Copy any material to work from into the prompt in full, inside its own section.\n- Keep it as short as the task allows.\n- '+tgt+'\n\n'+
       'Return only the finished prompt. No preamble, no commentary, no code fences.\n\n=== SETTINGS ===\n'+meta()+
-      (sv('source')?'\n\n=== MATERIAL TO WORK FROM ===\n'+sv('source'):'')+'\n\n=== RAW NOTES ===\n'+th;
+      (sv('source')?'\n\n=== MATERIAL TO WORK FROM ===\n'+sv('source'):'')+attachPlain()+'\n\n=== RAW NOTES ===\n'+th;
     try{
       await sampleFn(instr,{signal:controller.signal,cache:false,modelTier:'default',onText:function(o){state.ai=o.text;$('out').textContent=state.ai;}});
       state.aiBusy=false;
@@ -581,6 +638,181 @@ footer a{color:var(--accent)}
     if(!clearArmed){clearArmed=true;b.textContent='Click again to clear';setTimeout(function(){clearArmed=false;b.textContent='Clear profile'},3000);return}
     clearArmed=false;b.textContent='Clear profile';profile={};store.set('pd.profile','{}');fillProfileForm();afterChange();
   });
+
+
+  /* ---------- pictures and audio ---------- */
+  function fmtSize(b){return b<1048576?Math.max(1,Math.round(b/1024))+' KB':(b/1048576).toFixed(1)+' MB'}
+  function fmtDur(s){if(!isFinite(s))return '';var m=Math.floor(s/60),r=Math.round(s%60);return m+':'+(r<10?'0':'')+r}
+  function attStatus(m,err){var s=$('attStatus');s.textContent=m;s.className='status'+(err?' err':'')}
+  function attachPlain(){
+    var t='';
+    if(images.length)t+='\n\n=== ATTACHED IMAGES ===\nThe person is attaching '+images.length+' image(s) to the same message: '+images.map(function(im,i){return 'Image '+(i+1)+' '+im.file.name+(clean(im.note)?' ('+clean(im.note)+')':'')}).join('; ')+'. The finished prompt must tell the assistant to use them.';
+    if(clean($('imgNotes').value))t+='\n\n=== WHAT THE IMAGES SHOW ===\n'+clean($('imgNotes').value);
+    if(audios.length)t+='\n\n=== AUDIO TRANSCRIPTS ===\n'+audios.map(function(a,i){return 'Audio '+(i+1)+' ('+a.file.name+'):\n'+(clean(a.transcript)||'[no transcript provided]')}).join('\n\n');
+    return t;
+  }
+  function updateAttachUI(){
+    $('imgNotesBox').hidden=!images.length;
+    $('readImgs').hidden=!(images.length&&imgLimits&&sampleFn);
+    $('audHint').hidden=!audios.length;
+  }
+
+  function addImages(files){
+    var n=0;
+    Array.prototype.forEach.call(files,function(f){
+      if(!/^image\//.test(f.type))return;
+      images.push({id:++attId,file:f,url:URL.createObjectURL(f),note:''});n++;
+    });
+    if(n){renderAttachments();afterChange();attStatus(n+' picture'+(n>1?'s':'')+' added.')}
+  }
+  function addAudios(files){
+    var n=0;
+    Array.prototype.forEach.call(files,function(f){
+      if(!/^audio\//.test(f.type)&&!/\.(mp3|m4a|wav|ogg|opus|aac|flac|webm)$/i.test(f.name))return;
+      audios.push({id:++attId,file:f,url:URL.createObjectURL(f),transcript:'',dur:''});n++;
+    });
+    if(n){renderAttachments();afterChange();attStatus(n+' audio file'+(n>1?'s':'')+' added.')}
+  }
+
+  function makeMic(el){
+    var b=document.createElement('button');b.type='button';b.className='mic';b.textContent='● Speak';b.hidden=!dict;
+    b.addEventListener('click',function(){toggleMic(el)});
+    mics.push({btn:b,el:el});return b;
+  }
+
+  function renderAttachments(){
+    mics=mics.filter(function(m){return m.el===$('thoughts')});
+    var il=$('imgList');il.textContent='';
+    images.forEach(function(im,i){
+      var d=document.createElement('div');d.className='att';
+      var img=document.createElement('img');img.className='thumb';img.src=im.url;img.alt='Preview of '+im.file.name;
+      var m=document.createElement('div');m.className='att-meta';
+      var nm=document.createElement('div');nm.className='att-name';nm.textContent='Image '+(i+1)+' · '+im.file.name+' · '+fmtSize(im.file.size);
+      var note=document.createElement('input');note.type='text';note.id='a_i_'+im.id;note.value=im.note;note.placeholder='What is this? (optional)';note.setAttribute('aria-label','Note for image '+(i+1));
+      note.addEventListener('input',function(){im.note=note.value;afterChange()});
+      var ac=document.createElement('div');ac.className='att-actions';
+      var cp=document.createElement('button');cp.type='button';cp.className='btn small';cp.textContent='Copy image';
+      cp.addEventListener('click',function(){copyImage(im,cp)});
+      var rm=document.createElement('button');rm.type='button';rm.className='x';rm.textContent='Remove';
+      rm.addEventListener('click',function(){URL.revokeObjectURL(im.url);images.splice(images.indexOf(im),1);renderAttachments();afterChange()});
+      ac.appendChild(cp);ac.appendChild(rm);
+      m.appendChild(nm);m.appendChild(note);m.appendChild(ac);d.appendChild(img);d.appendChild(m);il.appendChild(d);
+    });
+    var al=$('audList');al.textContent='';
+    audios.forEach(function(a,i){
+      var d=document.createElement('div');d.className='att';
+      var m=document.createElement('div');m.className='att-meta';
+      var nm=document.createElement('div');nm.className='att-name';
+      function label(){nm.textContent='Audio '+(i+1)+' · '+a.file.name+' · '+fmtSize(a.file.size)+(a.dur?' · '+a.dur:'')}
+      label();
+      var au=document.createElement('audio');au.controls=true;au.src=a.url;au.preload='metadata';
+      au.addEventListener('loadedmetadata',function(){a.dur=fmtDur(au.duration);label();afterChange()});
+      var row=document.createElement('div');row.className='lbl-row';
+      var lab=document.createElement('label');lab.htmlFor='a_a_'+a.id;lab.textContent='Transcript';
+      row.appendChild(lab);row.appendChild(null||document.createTextNode(''));
+      var ta=document.createElement('textarea');ta.id='a_a_'+a.id;ta.value=a.transcript;ta.placeholder='Paste the transcript, or press Speak and repeat what you hear.';
+      ta.addEventListener('input',function(){a.transcript=ta.value;afterChange()});
+      row.appendChild(makeMic(ta));
+      var ac=document.createElement('div');ac.className='att-actions';
+      var rm=document.createElement('button');rm.type='button';rm.className='x';rm.textContent='Remove';
+      rm.addEventListener('click',function(){URL.revokeObjectURL(a.url);audios.splice(audios.indexOf(a),1);renderAttachments();afterChange()});
+      ac.appendChild(rm);
+      m.appendChild(nm);m.appendChild(au);m.appendChild(row);m.appendChild(ta);m.appendChild(ac);d.appendChild(m);al.appendChild(d);
+    });
+    updateAttachUI();micLabel();
+  }
+
+  async function copyImage(im,btn){
+    var old=btn.textContent;
+    try{
+      var bmp=await createImageBitmap(im.file);
+      var c=document.createElement('canvas');c.width=bmp.width;c.height=bmp.height;c.getContext('2d').drawImage(bmp,0,0);
+      var blob=await new Promise(function(r){c.toBlob(r,'image/png')});
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      btn.textContent='Copied';setTimeout(function(){btn.textContent=old},1500);
+    }catch(e){attStatus('This view cannot copy images. Attach the file from your device instead.',true)}
+  }
+
+  /* file pickers, drop, paste */
+  $('addImg').addEventListener('click',function(){$('fileImg').click()});
+  $('addAud').addEventListener('click',function(){$('fileAud').click()});
+  $('fileImg').addEventListener('change',function(e){addImages(e.target.files);e.target.value=''});
+  $('fileAud').addEventListener('change',function(e){addAudios(e.target.files);e.target.value=''});
+  var drop=$('drop');
+  ['dragenter','dragover'].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.add('over')})});
+  ['dragleave','drop'].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.remove('over')})});
+  drop.addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files;if(f&&f.length){addImages(f);addAudios(f)}});
+  document.addEventListener('paste',function(e){
+    var items=e.clipboardData&&e.clipboardData.files;
+    if(items&&items.length&&Array.prototype.some.call(items,function(f){return /^image\//.test(f.type)})){addImages(items)}
+  });
+
+  /* read pictures with Claude */
+  $('readImgs').addEventListener('click',async function(){
+    if(!sampleFn||!imgLimits||!images.length)return;
+    var btn=$('readImgs');
+    if(imgCtl){imgCtl.abort();return}
+    var ok=images.filter(function(im){return imgLimits.mediaTypes.indexOf(im.file.type)>-1&&im.file.size<=imgLimits.maxInputBytes}).slice(0,imgLimits.maxCount);
+    if(!ok.length){attStatus('None of these pictures can be read here. Use JPEG, PNG, WebP or GIF under '+fmtSize(imgLimits.maxInputBytes)+', or type what they show.',true);return}
+    var skipped=images.length-ok.length;
+    imgCtl=new AbortController();btn.textContent='Stop reading';attStatus('Claude is reading '+ok.length+' picture'+(ok.length>1?'s':'')+'...');
+    var t=taskObj(),th=clean($('thoughts').value);
+    var q='You are reading '+ok.length+' image'+(ok.length>1?'s':'')+' for someone who will paste your notes into a prompt. The images are in order, call them '+ok.map(function(x,i){return 'Image '+(i+1)}).join(', ')+'.\nTheir task: '+t.goal+'\nTheir notes: '+(th||'(none)')+'\n\nFor each image write: what it shows in one or two sentences; every readable word, number, name and date, copied exactly; anything that matters for their task. Do not guess at what is not visible. Plain text, no preamble, no markdown.';
+    try{
+      var res=await sampleFn(q,{images:ok,signal:imgCtl.signal,cache:false,modelTier:'default',onText:function(o){$('imgNotes').value=o.text}});
+      $('imgNotes').value=res.text;
+      attStatus('Done.'+(skipped?' '+skipped+' picture'+(skipped>1?'s were':' was')+' skipped (unsupported type or too large).':'')+' Check the text, it goes into your prompt.');
+    }catch(e){
+      if(e&&e.code==='cancelled'||(imgCtl&&imgCtl.signal.aborted)){attStatus('Stopped.')}
+      else if(e&&e.code==='not_granted'){attStatus('Access to Claude was declined. Type what the pictures show instead.',true);$('readImgs').hidden=true}
+      else if(e&&e.code==='rate_limited'){attStatus('Too many requests. Wait a moment and try again.',true)}
+      else{attStatus('Claude could not read the pictures. Type what they show instead.',true)}
+    }
+    imgCtl=null;btn.textContent='Read with Claude';
+    $('imgNotes').dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  $('imgNotes').addEventListener('input',afterChange);
+
+  /* dictation */
+  var dict=null,dictTarget=null,dictState='idle';
+  function micLabel(){mics.forEach(function(m){var on=dictState!=='idle'&&dictTarget===m.el;m.btn.textContent=on?'■ Stop':'● Speak';m.btn.setAttribute('aria-pressed',on?'true':'false');m.btn.hidden=!dict})}
+  function toggleMic(el){
+    if(!dict)return;
+    var same=dictTarget===el;
+    if(dict.active()){
+      dict.stop().catch(function(){});
+      if(same)return;
+    }
+    dictTarget=el;
+    dict.start().catch(micErr);
+  }
+  function micErr(e){
+    var c=e&&e.code;
+    if(c==='not_granted')attStatus('Microphone access was declined for this page. You can type or paste instead.',true);
+    else if(c==='unavailable'){dict=null;micLabel();attStatus('Speaking is not available in this browser. You can type or paste instead.',true)}
+    else if(c==='rate_limited')attStatus('Too many dictations at once. Try again in a moment.',true);
+    else if(c==='dismissed'||c==='stopped'){}
+    else attStatus('Dictation failed. You can type or paste instead.',true);
+  }
+  $('micThoughts').addEventListener('click',function(){toggleMic($('thoughts'))});
+  mics.push({btn:$('micThoughts'),el:$('thoughts')});
+  (async function(){
+    try{
+      if(window.claude&&window.claude.use){
+        var d=await window.claude.use('dictation');
+        if(d){
+          dict=d;
+          d.onFinal(function(e){
+            if(!dictTarget)return;
+            var t=e.text;if(!dictTarget.value)t=t.replace(/^\s+/,'');
+            dictTarget.value+=t;dictTarget.dispatchEvent(new Event('input',{bubbles:true}));
+          });
+          d.onState(function(e){dictState=e.state;if(e.state==='idle'){if(e.reason==='unavailable'){dict=null}}micLabel()});
+          micLabel();
+        }
+      }
+    }catch(e){}
+  })();
 
   render();
 })();
