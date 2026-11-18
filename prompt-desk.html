@@ -4,6 +4,7 @@
 <style>
 /* Layout: branded header with the double-o.co.ke horizontal lockup (light and dark variants), two-pane workbench, readiness meter above the output. Palette from the brand pack "Original cyan": accent 1FD1E5, accent on light 0A97A8, graphite 8A8D96 / 4A4C52, dark background 161826. Typeface Jost. */
 :root{
+  --outside:#cfe2e8; --shadow:0 14px 36px rgba(16,50,60,.18);
   --bg:#f4f6f8; --surface:#ffffff; --surface2:#e9eef1; --line:#d7dee3;
   --fg:#1d1f25; --muted:#4a4c52; --accent:#08808f; --accent-fg:#ffffff; --accent-soft:#d6f4f8;
   --good:#17803d; --warn:#a15c00; --bad:#b3261e; --code-bg:#161826; --code-fg:#e9e9ed; --tagc:#1fd1e5;
@@ -12,21 +13,32 @@
   --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --outside:#e3ecef; --shadow:0 16px 48px rgba(10,14,30,.30);
   --bg:#161826; --surface:#1e2133; --surface2:#272b40; --line:#343954;
   --fg:#e9e9ed; --muted:#9397ab; --accent:#1fd1e5; --accent-fg:#161826; --accent-soft:#12324a;
   --good:#4cc37a; --warn:#e0a24a; --bad:#ff8a80; --code-bg:#0e101b; --code-fg:#e9e9ed; --tagc:#1fd1e5; color-scheme:dark}
   :root:not([data-theme="light"]) .logo-l{display:none} :root:not([data-theme="light"]) .logo-d{display:block}}
 :root[data-theme="dark"]{
+  --outside:#e3ecef; --shadow:0 16px 48px rgba(10,14,30,.30);
   --bg:#161826; --surface:#1e2133; --surface2:#272b40; --line:#343954;
   --fg:#e9e9ed; --muted:#9397ab; --accent:#1fd1e5; --accent-fg:#161826; --accent-soft:#12324a;
   --good:#4cc37a; --warn:#e0a24a; --bad:#ff8a80; --code-bg:#0e101b; --code-fg:#e9e9ed; --tagc:#1fd1e5; color-scheme:dark}
 :root[data-theme="dark"] .logo-l{display:none} :root[data-theme="dark"] .logo-d{display:block}
 
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-body);
+body{background:var(--outside);color:var(--fg);font:15px/1.5 var(--font-body);
   padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px;background:var(--bg);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:22px}
+@media (max-width:560px){.wrap{padding:14px;border-radius:16px}}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.hdr-right{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.seg{display:flex;gap:2px;background:var(--surface2);padding:4px;border-radius:10px}
+.seg button{border:0;background:transparent;color:var(--muted);font:500 13px var(--font-body);padding:7px 11px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.seg svg{width:14px;height:14px;flex:none}
+.lbl-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.undo{font-size:12.5px;color:var(--muted)}
+.undo .x{border:0;background:transparent;color:var(--accent);font:600 12.5px var(--font-body);cursor:pointer;text-decoration:underline;padding:0 2px}
 .brand{display:flex;align-items:center;gap:14px;min-width:0}
 .logo{display:block;height:40px;width:auto;max-width:100%}
 .logo-d{display:none}
@@ -123,9 +135,15 @@ footer a{color:var(--accent)}
         <p>A double-o production. Think once, paste once.</p>
       </div>
     </div>
+    <div class="hdr-right">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-compose" aria-selected="true">Compose</button>
       <button class="tab" role="tab" id="tab-profile" aria-selected="false">My profile<span class="meter-s" id="meter"></span></button>
+    </div>
+    <div class="seg" role="group" aria-label="Colour mode">
+      <button type="button" id="themeLight" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Light</button>
+      <button type="button" id="themeDark" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Dark</button>
+    </div>
     </div>
   </header>
 
@@ -136,7 +154,7 @@ footer a{color:var(--accent)}
         <div class="chips" id="recipeChips"></div>
       </div>
       <div class="field">
-        <div class="lbl-row"><label for="thoughts">Your thoughts</label><button class="mic" id="micThoughts" type="button" hidden>● Speak</button></div>
+        <div class="lbl-row"><label for="thoughts">Your thoughts</label><span class="lbl-tools"><span class="undo" id="undoBox" hidden>Cleared. <button type="button" class="x" id="undoBtn">Undo</button></span><button class="btn small" id="clearAll" type="button">Clear all</button><button class="mic" id="micThoughts" type="button" hidden>● Speak</button></span></div>
         <textarea id="thoughts" placeholder="Write it the way it sits in your head. Half sentences are fine."></textarea>
         <p class="hint" id="exampleHint">Example text is loaded so you can see the output. Replace it with your own.</p>
       </div>
@@ -813,6 +831,49 @@ footer a{color:var(--accent)}
       }
     }catch(e){}
   })();
+
+  /* ---------- colour mode ---------- */
+  function sysTheme(){try{return window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){return 'light'}}
+  function curTheme(){return document.documentElement.getAttribute('data-theme')||sysTheme()}
+  function paintTheme(){var t=curTheme();$('themeLight').setAttribute('aria-pressed',t==='light'?'true':'false');$('themeDark').setAttribute('aria-pressed',t==='dark'?'true':'false')}
+  function setTheme(t){document.documentElement.setAttribute('data-theme',t);store.set('pd.theme',t);paintTheme()}
+  var savedTheme=store.get('pd.theme');
+  if(savedTheme==='light'||savedTheme==='dark')document.documentElement.setAttribute('data-theme',savedTheme);
+  $('themeLight').addEventListener('click',function(){setTheme('light')});
+  $('themeDark').addEventListener('click',function(){setTheme('dark')});
+  paintTheme();
+
+  /* ---------- clear all, with undo ---------- */
+  var snap=null,snapTimer=null;
+  function dropSnap(){
+    if(snap){snap.im.forEach(function(i){URL.revokeObjectURL(i.url)});snap.au.forEach(function(a){URL.revokeObjectURL(a.url)})}
+    snap=null;clearTimeout(snapTimer);$('undoBox').hidden=true;
+  }
+  function clearAll(){
+    var had=clean($('thoughts').value)||SHARP.some(function(k){return clean($('s_'+k).value)})||images.length||audios.length||clean($('imgNotes').value);
+    if(!had)return;
+    if(dict&&dict.active())dict.stop().catch(function(){});
+    if(imgCtl)imgCtl.abort();
+    dropSnap();
+    snap={t:$('thoughts').value,s:{},n:$('imgNotes').value,im:images,au:audios};
+    SHARP.forEach(function(k){snap.s[k]=$('s_'+k).value;$('s_'+k).value=''});
+    $('thoughts').value='';$('imgNotes').value='';images=[];audios=[];
+    isExample=false;$('exampleHint').hidden=true;
+    store.set('pd.thoughts','');saveSharp();attStatus('');
+    renderAttachments();afterChange();
+    $('undoBox').hidden=false;snapTimer=setTimeout(dropSnap,10000);
+    $('thoughts').focus();
+  }
+  function undoClear(){
+    if(!snap)return;
+    $('thoughts').value=snap.t;$('imgNotes').value=snap.n;
+    SHARP.forEach(function(k){$('s_'+k).value=snap.s[k]||''});
+    images=snap.im;audios=snap.au;snap=null;clearTimeout(snapTimer);$('undoBox').hidden=true;
+    store.set('pd.thoughts',$('thoughts').value);saveSharp();
+    renderAttachments();afterChange();
+  }
+  $('clearAll').addEventListener('click',clearAll);
+  $('undoBtn').addEventListener('click',undoClear);
 
   render();
 })();
